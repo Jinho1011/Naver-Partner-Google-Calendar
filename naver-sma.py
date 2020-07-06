@@ -149,14 +149,10 @@ def calendar(summary, starD, endD):
     if (not isOverlapped):
         event = service.events().insert(
             calendarId='sma.orangefox@gmail.com', body=event, sendUpdates=None, sendNotifications=None).execute()
-        print(start_date_obj, summary, " successfully added!")
-    else:
-        print(start_date_obj, summary, " already exist!")
 
 
 if __name__ == "__main__":
     session = naver_session('jinho9940', 'jinho1221!')
-    print(" ### Created Session! ### ")
     NAVER_BOOKING_LIST_API_URL = get_url()
     req = session.get(NAVER_BOOKING_LIST_API_URL)
     book_json = json.loads(req.text)
