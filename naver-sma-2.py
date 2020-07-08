@@ -93,20 +93,24 @@ def naver_session(nid, npw):
 def calendar(summary, start_date, end_date, refund):
     SCOPES = ['https://www.googleapis.com/auth/calendar']
     creds = None
-    if os.path.exists('token.pickle'):
-        with open('token.pickle', 'rb') as token:
+    if os.path.exists('C:\\Users\\music\\Downloads\\Naver-Partner-Google-Calendar-master\\Naver-Partner-Google-Calendar-master\\token.pickle'):
+        with open('C:\\Users\\music\\Downloads\\Naver-Partner-Google-Calendar-master\\Naver-Partner-Google-Calendar-master\\token.pickle', 'rb') as token:
             creds = pickle.load(token)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
+                'C:\\Users\\music\\Downloads\\Naver-Partner-Google-Calendar-master\\Naver-Partner-Google-Calendar-master\\credentials.json', SCOPES)
             creds = flow.run_local_server(port=3030)
         # Save the credentials for the next run
-        with open('token.pickle', 'wb') as token:
+        with open('C:\\Users\\music\\Downloads\\Naver-Partner-Google-Calendar-master\\Naver-Partner-Google-Calendar-master\\token.pickle', 'wb') as token:
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)
+
+    # 만약 refund > 0
+    # 1) 이미 들어가있는 경우 => 삭제
+    # 2) 처음 등록하는 경우 => 등록하지 않음
 
     now = datetime.utcnow().isoformat() + 'Z'
     events_result = service.events().list(calendarId='sma.orangefox@gmail.com', timeMin=now,
@@ -117,33 +121,27 @@ def calendar(summary, start_date, end_date, refund):
     for event in events:
         if summary == event["summary"] and str(start_date+"+09:00") == event['start']['dateTime']:
             if refund > 0:
-                print(event)
-                # delete_event = service.events().delete(
-                #     calendarId='sma.orangefox@gmail.com', eventId=event["id"]).execute()
+                # refund 시 삭제
+                delete_event = service.events().delete(
+                    calendarId='sma.orangefox@gmail.com', eventId=event["id"]).execute()
             else:
+                # 중복되면 나감
                 return
 
-            # event = {
-            #     'summary': summary,
-            #     'start': {
-            #         'dateTime': start_date,
-            #         'timeZone': 'Asia/Seoul',
-            #     },
-            #     'end': {
-            #         'dateTime': end_date,
-            #         'timeZone': 'Asia/Seoul',
-            #     }
-            # }
+    event = {
+        'summary': summary,
+        'start': {
+            'dateTime': start_date,
+            'timeZone': 'Asia/Seoul',
+        },
+        'end': {
+            'dateTime': end_date,
+            'timeZone': 'Asia/Seoul',
+        }
+    }
 
-            # isOverlapped = False
-
-            # for e in events:
-            #     if summary == e['summary'] and str(start_date+"+09:00") == e['start']['dateTime']:
-            #         isOverlapped = True
-
-            # if (not isOverlapped):
-            #     event = service.events().insert(
-            #         calendarId='sma.orangefox@gmail.com', body=event, sendUpdates=None, sendNotifications=None).execute()
+    event = service.events().insert(
+        calendarId='sma.orangefox@gmail.com', body=event, sendUpdates=None, sendNotifications=None).execute()
 
 
 if __name__ == "__main__":
