@@ -30,7 +30,6 @@ def get_partner_booking_api_url():
     end_date = dday.strftime('%Y-%m-%d') + 'T00%3A00%3A00.000Z'
     return 'https://partner.booking.naver.com/api/businesses/167437/bookings?bizItemTypes=STANDARD&bookingStatusCodes=&dateDropdownType=MONTH&dateFilter=USEDATE&endDateTime=' + end_date + '&maxDays=31&nPayChargedStatusCodes=&orderBy=&orderByStartDate=ASC&paymentStatusCodes=&searchValue=&searchValueCode=USER_NAME&startDateTime=' + start_date + '&page=0&size=50&noCache=1593413152922'
 
-
 def encrypt(key_str, uid, upw):
     def naver_style_join(l):
         return ''.join([chr(len(s)) + s for s in l])
@@ -108,10 +107,6 @@ def calendar(summary, start_date, end_date, refund):
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)
 
-    # 만약 refund > 0
-    # 1) 이미 들어가있는 경우 => 삭제
-    # 2) 처음 등록하는 경우 => 등록하지 않음
-
     now = datetime.utcnow().isoformat() + 'Z'
     events_result = service.events().list(calendarId='sma.orangefox@gmail.com', timeMin=now,
                                           maxResults=100, singleEvents=True,
@@ -121,11 +116,12 @@ def calendar(summary, start_date, end_date, refund):
     for event in events:
         if summary == event["summary"] and str(start_date+"+09:00") == event['start']['dateTime']:
             if refund > 0:
-                # refund 시 삭제
+                print("Refunded Customer")
                 delete_event = service.events().delete(
                     calendarId='sma.orangefox@gmail.com', eventId=event["id"]).execute()
+                return
             else:
-                # 중복되면 나감
+                print("Overlapped Customer")
                 return
 
     event = {
@@ -142,6 +138,7 @@ def calendar(summary, start_date, end_date, refund):
 
     event = service.events().insert(
         calendarId='sma.orangefox@gmail.com', body=event, sendUpdates=None, sendNotifications=None).execute()
+    print("Customer Added")
 
 
 if __name__ == "__main__":
@@ -177,5 +174,6 @@ if __name__ == "__main__":
                 str(booking_opt_cnt) + ")"
             calendar_summary += bookgin_opt
 
+        print("##", calendar_summary, "##")
         calendar(calendar_summary, start_date_str,
                  end_date_str, booking_refund)
