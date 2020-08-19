@@ -93,18 +93,18 @@ def naver_session(nid, npw):
 def calendar(summary, start_date, end_date, refund):
     SCOPES = ['https://www.googleapis.com/auth/calendar']
     creds = None
-    if os.path.exists('C:\\Users\\music\\Downloads\\Naver-Partner-Google-Calendar-master\\Naver-Partner-Google-Calendar-master\\token.pickle'):
-        with open('C:\\Users\\music\\Downloads\\Naver-Partner-Google-Calendar-master\\Naver-Partner-Google-Calendar-master\\token.pickle', 'rb') as token:
+    if os.path.exists('token.pickle'):
+        with open('token.pickle', 'rb') as token:
             creds = pickle.load(token)
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                'C:\\Users\\music\\Downloads\\Naver-Partner-Google-Calendar-master\\Naver-Partner-Google-Calendar-master\\credentials.json', SCOPES)
+                'credentials.json', SCOPES)
             creds = flow.run_local_server(port=3030)
         # Save the credentials for the next run
-        with open('C:\\Users\\music\\Downloads\\Naver-Partner-Google-Calendar-master\\Naver-Partner-Google-Calendar-master\\token.pickle', 'wb') as token:
+        with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
     service = build('calendar', 'v3', credentials=creds)
 
@@ -119,12 +119,10 @@ def calendar(summary, start_date, end_date, refund):
     for event in events:
         if summary == event["summary"] and str(start_date+"+09:00") == event['start']['dateTime']:
             if refund > 0:
-                print("Refunded Customer")
                 delete_event = service.events().delete(
                     calendarId='sma.orangefox@gmail.com', eventId=event["id"]).execute()
                 return
             else:
-                print("Overlapped Customer")
                 return
 
     event = {
@@ -141,7 +139,6 @@ def calendar(summary, start_date, end_date, refund):
 
     event = service.events().insert(
         calendarId='sma.orangefox@gmail.com', body=event, sendUpdates=None, sendNotifications=None).execute()
-    print("Customer Added")
 
 
 if __name__ == "__main__":
@@ -156,8 +153,11 @@ if __name__ == "__main__":
         booking_refund = customer["refundPrice"]
 
         # Set calendar_summary as customer name
-        calendar_summary = customer["bizItemName"].split(
-            ' ')[0] + " " + customer["name"]
+        if customer["bizItemName"].endswith("*인기상품"):
+            room_name = customer["bizItemName"].split("*인기상품")[0]
+        else:
+            room_name = customer["bizItemName"]
+        calendar_summary = room_name + " " + customer["name"]
 
         # If customers are more than 1, Add the number of customers
         if (customer["bookingCount"] > 1):
@@ -177,6 +177,5 @@ if __name__ == "__main__":
                 str(booking_opt_cnt) + ")"
             calendar_summary += bookgin_opt
 
-        print("##", calendar_summary, "##")
         calendar(calendar_summary, start_date_str,
                  end_date_str, booking_refund)
